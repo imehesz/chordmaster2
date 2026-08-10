@@ -1,0 +1,21 @@
+# planning / working notes stay out of the repo
+NOTES.md
+TODO.md
+PLAN.md
+SPEC.md
+REQUIREMENTS.md
+notes/
+planning/
+*.notes.md
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# nothing is built, but just in case
+node_modules/
+dist/
+build/

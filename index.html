@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="description" content="Guitar chord and progression trainer with a 30 day plan.">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ChordMaster">
+<title>ChordMaster</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ==================== PRACTICE ==================== -->
+  <section class="screen is-active" id="screen-practice">
+    <header class="topbar">
+      <div class="topbar-title" id="session-title">Free practice</div>
+      <button class="streak-chip" id="streak-chip" type="button" aria-label="Your streak">
+        <span class="flame">&#9670;</span><span id="streak-chip-n">0</span>
+      </button>
+    </header>
+
+    <div class="stage">
+      <div class="stage-sub" id="drill-label">Pick something to work on</div>
+
+      <div class="chord-card" id="chord-card">
+        <div class="chord-name" id="chord-name">&ndash;</div>
+        <div class="chord-diagram-slot" id="chord-diagram"></div>
+        <div class="chord-tip" id="chord-tip">Choose a mode below and hit start.</div>
+      </div>
+
+      <div class="countin" id="countin" hidden><span id="countin-n">4</span></div>
+
+      <div class="finish-card" id="finish-card" hidden>
+        <div class="finish-tick">&#10003;</div>
+        <h3 id="finish-title">Day 1 finished</h3>
+        <p id="finish-sub">13 minutes played</p>
+        <button class="finish-primary" id="finish-done" type="button">Mark day 1 done</button>
+        <button class="finish-secondary" id="finish-again" type="button">Run it again</button>
+        <button class="finish-link" id="finish-later" type="button">Not yet &mdash; I&rsquo;ll come back to it</button>
+      </div>
+
+      <div class="next-strip" id="next-strip" hidden>
+        <span class="next-label">Next</span>
+        <span class="next-name" id="next-name"></span>
+        <span class="next-diagram" id="next-diagram"></span>
+      </div>
+
+      <div class="beat-row" id="beat-row" hidden></div>
+
+      <div class="step-bar" id="step-bar" aria-hidden="true"><div class="step-bar-fill" id="step-fill"></div></div>
+
+      <div class="bar-counter" id="bar-counter" hidden></div>
+    </div>
+
+    <div class="setup" id="setup">
+      <div class="seg" role="tablist" aria-label="Practice mode">
+        <button class="seg-btn is-on" data-mode="chords" type="button">Chords</button>
+        <button class="seg-btn" data-mode="progression" type="button">Progressions</button>
+        <button class="seg-btn" data-mode="lesson" type="button">Today</button>
+      </div>
+
+      <!-- chord pool -->
+      <div class="panel" id="panel-chords">
+        <div class="panel-head">
+          <span>Chord pool</span>
+          <span class="panel-count" id="pool-count">0 selected</span>
+        </div>
+        <div class="chip-row" id="pool-filters">
+          <button class="chip" data-filter="known" type="button">Learned</button>
+          <button class="chip" data-filter="open" type="button">Open</button>
+          <button class="chip" data-filter="major" type="button">Major</button>
+          <button class="chip" data-filter="minor" type="button">Minor</button>
+          <button class="chip" data-filter="seventh" type="button">7ths</button>
+          <button class="chip" data-filter="barre" type="button">Barre</button>
+          <button class="chip" data-filter="none" type="button">Clear</button>
+        </div>
+        <div class="pool-grid" id="pool-grid"></div>
+        <div class="row-field">
+          <label for="bars-per-chord">Hold each chord</label>
+          <div class="stepper">
+            <button type="button" data-bars="-1" aria-label="Fewer bars">&minus;</button>
+            <span id="bars-per-chord">1 bar</span>
+            <button type="button" data-bars="1" aria-label="More bars">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- progression picker -->
+      <div class="panel" id="panel-progression" hidden>
+        <div class="panel-head"><span>Progression</span></div>
+        <div class="prog-list" id="prog-list"></div>
+      </div>
+
+      <!-- today's lesson -->
+      <div class="panel" id="panel-lesson" hidden>
+        <div class="lesson-preview" id="lesson-preview"></div>
+      </div>
+
+      <div class="row-field tempo-field">
+        <label>Tempo</label>
+        <div class="stepper stepper-wide">
+          <button type="button" data-bpm="-4" aria-label="Slower">&minus;</button>
+          <span><strong id="bpm-value">80</strong> bpm</span>
+          <button type="button" data-bpm="4" aria-label="Faster">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="transport">
+      <button class="go" id="go" type="button">Start</button>
+    </div>
+  </section>
+
+  <!-- ==================== LESSONS ==================== -->
+  <section class="screen" id="screen-lessons">
+    <header class="topbar">
+      <div class="topbar-title">30 Day Plan</div>
+      <div class="topbar-meta" id="lesson-progress-meta"></div>
+    </header>
+    <div class="plan-bar"><div class="plan-bar-fill" id="plan-bar-fill"></div></div>
+    <div class="scroll" id="lesson-list"></div>
+  </section>
+
+  <!-- ==================== STATS ==================== -->
+  <section class="screen" id="screen-stats">
+    <header class="topbar"><div class="topbar-title">Your Progress</div></header>
+    <div class="scroll">
+      <div class="streak-hero">
+        <div class="streak-number" id="stat-streak">0</div>
+        <div class="streak-word" id="stat-streak-word">day streak</div>
+        <div class="streak-note" id="stat-streak-note"></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-n" id="stat-longest">0</div><div class="stat-l">Best streak</div></div>
+        <div class="stat"><div class="stat-n" id="stat-minutes">0</div><div class="stat-l">Minutes played</div></div>
+        <div class="stat"><div class="stat-n" id="stat-days">0</div><div class="stat-l">Days practised</div></div>
+        <div class="stat"><div class="stat-n" id="stat-lessons">0</div><div class="stat-l">Lessons done</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Last 5 weeks</div>
+        <div class="cal" id="calendar"></div>
+        <div class="cal-key">
+          <span><i class="dot dot-practiced"></i> practised</span>
+          <span><i class="dot dot-visited"></i> opened</span>
+          <span><i class="dot"></i> nothing</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Chords you have met</div>
+        <div class="known-grid" id="known-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <section class="screen" id="screen-settings">
+    <header class="topbar"><div class="topbar-title">Settings</div></header>
+    <div class="scroll">
+
+      <div class="card">
+        <div class="card-head">Sound</div>
+        <label class="switch-row">
+          <span><strong>Metronome</strong><small>A click on every beat, accented on the first</small></span>
+          <input type="checkbox" id="set-metronome" class="switch">
+        </label>
+        <label class="switch-row">
+          <span><strong>Play chord</strong><small>Strum the target chord so you can hear it</small></span>
+          <input type="checkbox" id="set-chord" class="switch">
+        </label>
+        <label class="switch-row">
+          <span><strong>Count in</strong><small>Four beats before the first chord</small></span>
+          <input type="checkbox" id="set-countin" class="switch">
+        </label>
+        <div class="slider-row">
+          <label for="set-volume">Volume</label>
+          <input type="range" id="set-volume" min="0" max="100" step="5">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Display</div>
+        <label class="switch-row">
+          <span><strong>Night mode</strong><small>Dark screen, easier on the eyes</small></span>
+          <input type="checkbox" id="set-theme" class="switch">
+        </label>
+        <label class="switch-row">
+          <span><strong>Finger numbers</strong><small>Show which finger goes where</small></span>
+          <input type="checkbox" id="set-fingers" class="switch">
+        </label>
+        <label class="switch-row">
+          <span><strong>Keep screen awake</strong><small>Stops the phone sleeping mid-practice</small></span>
+          <input type="checkbox" id="set-wake" class="switch">
+        </label>
+        <div class="hint" id="wake-hint" hidden></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Plan</div>
+        <div class="row-field">
+          <label>Current day</label>
+          <div class="stepper stepper-wide">
+            <button type="button" data-day="-1" aria-label="Previous day">&minus;</button>
+            <span>Day <strong id="set-day">1</strong></span>
+            <button type="button" data-day="1" aria-label="Next day">+</button>
+          </div>
+        </div>
+        <button class="danger" id="set-reset" type="button">Erase all progress</button>
+      </div>
+
+      <div class="about">
+        ChordMaster &middot; everything is stored on this device only.
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== NAV ==================== -->
+  <nav class="tabbar">
+    <button class="tab is-active" data-screen="practice" type="button">
+      <span class="tab-ico">&#9679;</span><span class="tab-txt">Practice</span>
+    </button>
+    <button class="tab" data-screen="lessons" type="button">
+      <span class="tab-ico">&#9635;</span><span class="tab-txt">Plan</span>
+    </button>
+    <button class="tab" data-screen="stats" type="button">
+      <span class="tab-ico">&#9650;</span><span class="tab-txt">Progress</span>
+    </button>
+    <button class="tab" data-screen="settings" type="button">
+      <span class="tab-ico">&#9881;</span><span class="tab-txt">Settings</span>
+    </button>
+  </nav>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script src="js/chords.js"></script>
+<script src="js/progressions.js"></script>
+<script src="js/lessons.js"></script>
+<script src="js/diagram.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/trainer.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
