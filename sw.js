@@ -23,6 +23,7 @@ var SHELL = [
   'js/diagram.js',
   'js/fretboard.js',
   'js/audio.js',
+  'js/tuner.js',
   'js/trainer.js',
   'js/storage.js',
   'js/app.js',

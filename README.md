@@ -52,6 +52,12 @@ chords you have met so far.
 **Settings** — independent toggles for metronome, chord playback and count-in,
 plus volume, night/day theme, finger numbers, and keeping the screen awake.
 
+**Tuner** — seven tunings (standard, drop D, half step down, drop C, open G,
+open D, DADGAD). The six strings are played one per beat at a tempo you choose,
+and each string can be muted on its own: leave one on and it repeats, so you can
+sit on a single note while you turn the peg. Tapping a string unmutes it and
+sounds it straight away, so a quick check needs no play button at all.
+
 ## How it is put together
 
 ```
@@ -62,6 +68,7 @@ js/progressions.js  20 progressions as lists of bars
 js/lessons.js       the 30 day plan
 js/diagram.js       chord shape -> inline SVG
 js/audio.js         Web Audio: metronome, plucked-string synth, beat clock
+js/tuner.js         seven tunings and the reference-pitch loop
 js/trainer.js       the practice engine
 js/storage.js       localStorage: streak, stats, settings
 js/app.js           UI wiring, tabs, wake lock
@@ -97,6 +104,12 @@ second set of assets. Adding a chord is one object; no image files exist.
 The guitar tone is a single Karplus-Strong plucked-string buffer generated at
 startup and pitch-shifted per note with `playbackRate`, so the whole instrument
 costs about 600 KB of memory rather than a sample per chord.
+
+The tuner cannot use that pluck — it decays away before you have finished
+turning a peg — so it holds an additive tone instead. Its upper partials are
+not decoration: a phone speaker cannot reproduce a low E at 82 Hz, and without
+them the bottom two strings would be inaudible on the device most people tune
+with.
 
 Timing uses the standard Web Audio lookahead pattern: a coarse `setInterval`
 schedules notes onto the audio clock in advance, and a `requestAnimationFrame`

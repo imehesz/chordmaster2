@@ -25,9 +25,19 @@
     activeScreen: 'practice'
   };
 
+  /* The support link's icon. Drawn rather than an emoji so it takes the theme
+     accent like every other mark in the app, and kept here as one string
+     instead of four copies of the same path in the markup. */
+  var COFFEE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M4.5 8.5h11.5v6.5a4 4 0 0 1-4 4H8.5a4 4 0 0 1-4-4V8.5Z"/>' +
+    '<path d="M16 10.5h1.4a2.6 2.6 0 0 1 0 5.2H16"/>' +
+    '<path d="M8.4 2.6c-.9 1.1-.9 2.2 0 3.3M12.1 2.6c-.9 1.1-.9 2.2 0 3.3"/></svg>';
+
   var wakeLock = null;
   var rafId = null;
   var beatNodes = [];
+  var tunerNodes = [];
   var toastTimer = null;
 
   /* ================= boot ================= */
@@ -46,6 +56,7 @@
 
     applyTheme(s.theme);
     CM.audio.applySettings(s);
+    restoreTuner(s);
 
     var visit = CM.store.recordVisit();
 
@@ -53,9 +64,11 @@
     buildProgressionList();
     buildExerciseList();
     buildLessonList();
+    paintCoffee();
     bindNav();
     bindSetup();
     bindSettings();
+    bindTuner();
     bindTrainer();
     bindFinishCard();
 
@@ -83,6 +96,12 @@
     if (meta) meta.setAttribute('content', theme === 'day' ? '#f6f3ee' : '#0e1116');
   }
 
+  function paintCoffee() {
+    Array.prototype.forEach.call(document.querySelectorAll('.coffee'), function (a) {
+      a.innerHTML = COFFEE_ICON;
+    });
+  }
+
   /* ================= navigation ================= */
 
   function bindNav() {
@@ -93,6 +112,9 @@
   }
 
   function showScreen(name) {
+    // The tuner lives on the settings screen and has no business still
+    // sounding once you have walked away from it.
+    if (ui.activeScreen === 'settings' && name !== 'settings') CM.tuner.stop();
     ui.activeScreen = name;
     Array.prototype.forEach.call(document.querySelectorAll('.screen'), function (s) {
       s.classList.toggle('is-active', s.id === 'screen-' + name);
@@ -382,6 +404,7 @@
     }
 
     if (!CM.audio.isSupported()) toast('No audio on this browser — visual only.');
+    CM.tuner.stop();
     CM.trainer.start(session);
   }
 
@@ -869,6 +892,10 @@
       if (!confirm('Erase your streak, stats and lesson progress on this device?')) return;
       CM.store.reset();
       applyTheme(CM.store.settings().theme);
+      CM.audio.applySettings(CM.store.settings());
+      CM.tuner.stop();
+      restoreTuner(CM.store.settings());
+      buildTunerStrings();
       CM.store.recordVisit();
       renderSettings();
       renderStats();
@@ -889,6 +916,7 @@
     $('set-theme').checked = s.theme !== 'day';
     $('set-volume').value = Math.round((s.volume != null ? s.volume : 0.8) * 100);
     $('set-day').textContent = CM.store.lesson().currentDay;
+    renderTuner();
 
     var hint = $('wake-hint');
     if (!('wakeLock' in navigator)) {
@@ -897,6 +925,110 @@
     } else {
       hint.hidden = true;
     }
+  }
+
+  /* ================= tuner ================= */
+
+  function restoreTuner(s) {
+    CM.tuner.setTuning(s.tuning || 'standard');
+    CM.tuner.setBpm(s.tunerBpm || 40);
+    if (s.tunerStrings) CM.tuner.setStrings(s.tunerStrings);
+  }
+
+  function bindTuner() {
+    var row = $('tuner-tunings');
+    CM.tuner.tunings.forEach(function (t) {
+      var b = el('button', 'chip', t.name);
+      b.type = 'button';
+      b.dataset.tuning = t.id;
+      b.addEventListener('click', function () {
+        CM.store.setSetting('tuning', CM.tuner.setTuning(t.id));
+        buildTunerStrings();
+        renderTuner();
+      });
+      row.appendChild(b);
+    });
+
+    $('tuner-all').addEventListener('click', function () { setAllStrings(true); });
+    $('tuner-none').addEventListener('click', function () { setAllStrings(false); });
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tuner-bpm]'), function (b) {
+      b.addEventListener('click', function () {
+        var next = CM.tuner.setBpm(CM.tuner.bpm() + Number(b.dataset.tunerBpm));
+        CM.store.setSetting('tunerBpm', next);
+        renderTuner();
+      });
+    });
+
+    $('tuner-go').addEventListener('click', function () {
+      if (CM.tuner.isRunning()) { CM.tuner.stop(); return; }
+      if (!CM.tuner.enabledCount()) { toast('Unmute a string first.'); return; }
+      if (!CM.audio.isSupported()) { toast('No audio on this browser.'); return; }
+      CM.tuner.start();
+    });
+
+    CM.tuner.on('string', function (s) {
+      tunerNodes.forEach(function (n, i) { n.classList.toggle('is-now', i === s.index); });
+    });
+    CM.tuner.on('start', renderTuner);
+    CM.tuner.on('stop', function () {
+      tunerNodes.forEach(function (n) { n.classList.remove('is-now'); });
+      renderTuner();
+    });
+
+    buildTunerStrings();
+  }
+
+  /* One button per string, low E on the left — the order the strings are
+     numbered everywhere else in the app. Rebuilt on a tuning change because
+     the note names on the buttons change with it. */
+  function buildTunerStrings() {
+    var row = $('tuner-strings');
+    row.innerHTML = '';
+    tunerNodes = [];
+    CM.tuner.notes().forEach(function (midi, i) {
+      var b = el('button', 'tuner-string');
+      b.type = 'button';
+      b.appendChild(el('span', 'tuner-string-n', String(6 - i)));
+      b.appendChild(el('span', 'tuner-string-note', CM.tuner.noteName(midi)));
+      b.addEventListener('click', function () {
+        var on = CM.tuner.toggleString(i);
+        CM.store.setSetting('tunerStrings', CM.tuner.strings());
+        renderTuner();
+        // Turning a string on plays it, so you can tap one and tune to it
+        // without starting the loop at all.
+        if (on) CM.tuner.playString(i);
+      });
+      row.appendChild(b);
+      tunerNodes.push(b);
+    });
+    renderTuner();
+  }
+
+  function setAllStrings(on) {
+    CM.store.setSetting('tunerStrings', CM.tuner.setAll(on));
+    renderTuner();
+  }
+
+  function renderTuner() {
+    var running = CM.tuner.isRunning();
+    var strings = CM.tuner.strings();
+
+    Array.prototype.forEach.call($('tuner-tunings').children, function (b) {
+      b.classList.toggle('is-on', b.dataset.tuning === CM.tuner.tuning());
+    });
+
+    var t = CM.tuner.get(CM.tuner.tuning());
+    $('tuner-spell').textContent = CM.tuner.spell(t.id) + ' — ' + t.blurb;
+
+    tunerNodes.forEach(function (n, i) {
+      n.classList.toggle('is-on', !!strings[i]);
+    });
+
+    $('tuner-bpm').textContent = CM.tuner.bpm();
+    var go = $('tuner-go');
+    go.textContent = running ? 'Stop' : 'Play the strings';
+    go.classList.toggle('is-playing', running);
   }
 
   /* ================= toast ================= */
@@ -924,6 +1056,7 @@
   /* Leaving the app mid-session should not silently keep the clock running. */
   window.addEventListener('pagehide', function () {
     if (CM.trainer.isRunning()) CM.trainer.stop();
+    CM.tuner.stop();
   });
 
   document.addEventListener('DOMContentLoaded', boot);

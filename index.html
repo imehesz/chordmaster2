@@ -22,10 +22,15 @@
   <!-- ==================== PRACTICE ==================== -->
   <section class="screen is-active" id="screen-practice">
     <header class="topbar">
+      <div class="topbar-brand">ChordMaster 2.0</div>
       <div class="topbar-title" id="session-title">Free practice</div>
-      <button class="streak-chip" id="streak-chip" type="button" aria-label="Your streak">
-        <span class="flame">&#9670;</span><span id="streak-chip-n">0</span>
-      </button>
+      <div class="topbar-right">
+        <button class="streak-chip" id="streak-chip" type="button" aria-label="Your streak">
+          <span class="flame">&#9670;</span><span id="streak-chip-n">0</span>
+        </button>
+        <a class="coffee" href="https://buymeacoffee.com/imehesz" target="_blank" rel="noopener noreferrer"
+           aria-label="Buy me a coffee" title="Buy me a coffee"></a>
+      </div>
     </header>
 
     <div class="stage">
@@ -141,8 +146,13 @@
   <!-- ==================== LESSONS ==================== -->
   <section class="screen" id="screen-lessons">
     <header class="topbar">
+      <div class="topbar-brand">ChordMaster 2.0</div>
       <div class="topbar-title">30 Day Plan</div>
-      <div class="topbar-meta" id="lesson-progress-meta"></div>
+      <div class="topbar-right">
+        <div class="topbar-meta" id="lesson-progress-meta"></div>
+        <a class="coffee" href="https://buymeacoffee.com/imehesz" target="_blank" rel="noopener noreferrer"
+           aria-label="Buy me a coffee" title="Buy me a coffee"></a>
+      </div>
     </header>
     <div class="plan-bar"><div class="plan-bar-fill" id="plan-bar-fill"></div></div>
     <div class="scroll" id="lesson-list"></div>
@@ -150,7 +160,14 @@
 
   <!-- ==================== STATS ==================== -->
   <section class="screen" id="screen-stats">
-    <header class="topbar"><div class="topbar-title">Your Progress</div></header>
+    <header class="topbar">
+      <div class="topbar-brand">ChordMaster 2.0</div>
+      <div class="topbar-title">Your Progress</div>
+      <div class="topbar-right">
+        <a class="coffee" href="https://buymeacoffee.com/imehesz" target="_blank" rel="noopener noreferrer"
+           aria-label="Buy me a coffee" title="Buy me a coffee"></a>
+      </div>
+    </header>
     <div class="scroll">
       <div class="streak-hero">
         <div class="streak-number" id="stat-streak">0</div>
@@ -184,7 +201,14 @@
 
   <!-- ==================== SETTINGS ==================== -->
   <section class="screen" id="screen-settings">
-    <header class="topbar"><div class="topbar-title">Settings</div></header>
+    <header class="topbar">
+      <div class="topbar-brand">ChordMaster 2.0</div>
+      <div class="topbar-title">Settings</div>
+      <div class="topbar-right">
+        <a class="coffee" href="https://buymeacoffee.com/imehesz" target="_blank" rel="noopener noreferrer"
+           aria-label="Buy me a coffee" title="Buy me a coffee"></a>
+      </div>
+    </header>
     <div class="scroll">
 
       <div class="card">
@@ -205,6 +229,27 @@
           <label for="set-volume">Volume</label>
           <input type="range" id="set-volume" min="0" max="100" step="5">
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Tuner</div>
+        <div class="chip-row" id="tuner-tunings"></div>
+        <div class="tuner-spell" id="tuner-spell"></div>
+        <div class="tuner-strings" id="tuner-strings"></div>
+        <div class="chip-row tuner-quick">
+          <button class="chip" id="tuner-all" type="button">All six</button>
+          <button class="chip" id="tuner-none" type="button">Mute all</button>
+        </div>
+        <div class="row-field">
+          <label>String speed</label>
+          <div class="stepper stepper-wide">
+            <button type="button" data-tuner-bpm="-5" aria-label="Slower">&minus;</button>
+            <span><strong id="tuner-bpm">40</strong> bpm</span>
+            <button type="button" data-tuner-bpm="5" aria-label="Faster">+</button>
+          </div>
+        </div>
+        <button class="tuner-go" id="tuner-go" type="button">Play the strings</button>
+        <div class="hint">Tap a string to mute or unmute it. Leave one on and it repeats, so you can sit on it while you turn the peg.</div>
       </div>
 
       <div class="card">
@@ -269,6 +314,7 @@
 <script src="js/diagram.js?v={{version}}"></script>
 <script src="js/fretboard.js?v={{version}}"></script>
 <script src="js/audio.js?v={{version}}"></script>
+<script src="js/tuner.js?v={{version}}"></script>
 <script src="js/trainer.js?v={{version}}"></script>
 <script src="js/storage.js?v={{version}}"></script>
 <script src="js/app.js?v={{version}}"></script>

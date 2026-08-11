@@ -22,7 +22,10 @@
       countIn: true,
       volume: 0.8,
       keepAwake: true,
-      showFingers: true
+      showFingers: true,
+      tuning: 'standard',
+      tunerBpm: 40,
+      tunerStrings: [true, true, true, true, true, true]
     },
     days: {},              // 'YYYY-MM-DD' -> { visited, minutes, sessions, practiced }
     streak: { current: 0, longest: 0, lastVisit: null },

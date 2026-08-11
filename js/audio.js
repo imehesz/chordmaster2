@@ -170,6 +170,42 @@
     });
   }
 
+  /**
+   * A steady reference pitch for the tuner, held for `seconds`.
+   *
+   * The pluck is no good here — it decays away before you have finished turning
+   * a peg — so this is an additive tone instead. The upper partials are not
+   * decoration: a phone speaker cannot reproduce a low E at 82Hz at all, and
+   * without them the bottom two strings would be silent on the device most
+   * people will use this on.
+   *
+   * Like `ding` it ignores the chord and metronome toggles. The tuner is its
+   * own feature, not part of a practice session.
+   */
+  function tone(midi, time, seconds) {
+    var c = ensureContext();
+    if (!c) return;
+    var t = time && time > 0 ? time : c.currentTime + 0.02;
+    var dur = Math.max(0.25, seconds || 1.2);
+    var freq = 440 * Math.pow(2, (midi - 69) / 12);
+    var attack = 0.03;
+    var release = Math.min(0.22, dur * 0.35);
+
+    [[1, 0.20], [2, 0.10], [3, 0.055], [4, 0.03], [5, 0.018]].forEach(function (partial) {
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq * partial[0];
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(partial[1], t + attack);
+      g.gain.setValueAtTime(partial[1], t + dur - release);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(master);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+    });
+  }
+
   function click(time, accent) {
     var c = ensureContext();
     if (!c) return;
@@ -272,6 +308,7 @@
     strum: strum,
     pluck: pluck,
     ding: ding,
+    tone: tone,
 
     tick: function (time, accent) {
       if (settings.metronome) click(time, accent);
