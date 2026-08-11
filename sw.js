@@ -3,9 +3,14 @@
  * The whole app is a handful of small static files, so it is cached up front
  * and served cache-first. Practice works with no signal at all.
  *
- * Bump CACHE whenever you ship a change, or the old files keep being served.
+ * CACHE is stamped by deployScriptPROD.sh: the {{version}} token becomes the
+ * build timestamp, so every deploy lands under a fresh cache name and `activate`
+ * throws the previous one away. Serving is cache-first, which means this is the
+ * lever that actually busts a stale app - a ?v= on the script tags does nothing
+ * on its own, because index.html itself would still come from the old cache.
+ * Left unstamped when running from source, where one fixed name is fine.
  */
-var CACHE = 'chordmaster2-v4';
+var CACHE = 'chordmaster2-{{version}}';
 
 var SHELL = [
   './',
@@ -23,7 +28,8 @@ var SHELL = [
   'js/app.js',
   'manifest.json',
   'icons/icon-192.png',
-  'icons/icon-512.png'
+  'icons/icon-512.png',
+  'icons/icon-512-maskable.png'
 ];
 
 self.addEventListener('install', function (e) {

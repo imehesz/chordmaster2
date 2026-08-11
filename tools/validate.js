@@ -337,9 +337,21 @@ classes.forEach(c => {
 
 const shell = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:js|css|icons)\/[^"]+|manifest\.json)"/g)].forEach(m => {
-  if (!fs.existsSync(path.join(ROOT, m[1]))) err(`index.html links ${m[1]}, which does not exist`);
-  if (!shell.includes(`'${m[1]}'`)) warn(`${m[1]} is not in the service worker cache list`);
+  // Strip the ?v={{version}} cache-buster the deploy stamps in — it is not
+  // part of the path on disk, and the service worker lists the plain files.
+  const rel = m[1].split('?')[0];
+  if (!fs.existsSync(path.join(ROOT, rel))) err(`index.html links ${rel}, which does not exist`);
+  if (!shell.includes(`'${rel}'`)) warn(`${rel} is not in the service worker cache list`);
 });
+
+/* The whole point of the token is that every deploy looks new. A file that
+ * links assets without it will be served from a stale cache after a deploy. */
+[...html.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)].forEach(m => {
+  if (!m[1].includes('{{version}}')) warn(`index.html links ${m[1]} with no ?v={{version}} — it will go stale`);
+});
+if (!/CACHE\s*=\s*'[^']*\{\{version\}\}/.test(shell)) {
+  warn('sw.js CACHE has no {{version}} — the service worker will keep serving the old shell');
+}
 
 /* ================= report ================= */
 
