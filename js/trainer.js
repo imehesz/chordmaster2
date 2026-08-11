@@ -264,7 +264,21 @@
     if (!drill) return;
 
     if (beat < 0) {
-      emit('countin', { remaining: -beat });
+      // Count the player in *to something*. The provider already knows what
+      // beat 0 holds, so send it along: four clicks that resolve onto a shape
+      // you have never seen are no use to a beginner, and on a long drill it
+      // can be a while before it comes round again.
+      var first = drill.provider.at(0);
+      var isExercise = drill.kind === 'exercise';
+      emit('countin', {
+        remaining: -beat,
+        info: first,
+        drill: drill,
+        note: isExercise ? first.note : null,
+        nextNote: isExercise ? first.nextNote : null,
+        chord: !isExercise && CM.chords.has(first.chord) ? CM.chords.get(first.chord) : null,
+        next: !isExercise && CM.chords.has(first.next) ? CM.chords.get(first.next) : null
+      });
       return;
     }
 

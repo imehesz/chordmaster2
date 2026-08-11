@@ -38,6 +38,7 @@
   var rafId = null;
   var beatNodes = [];
   var tunerNodes = [];
+  var countinDrawn = false;
   var toastTimer = null;
 
   /* ================= boot ================= */
@@ -408,6 +409,34 @@
     CM.trainer.start(session);
   }
 
+  /* Drawing the stage. Both of these are used twice: once for the count-in
+     preview, and once for real when the beat lands. `flash` is what separates
+     the two — the name only pops when the chord actually arrives. */
+
+  function drawChord(chord, next, flash) {
+    var name = $('chord-name');
+    name.textContent = chord.name;
+    name.classList.remove('is-flash');
+    if (flash) {
+      void name.offsetWidth;
+      name.classList.add('is-flash');
+    }
+    $('chord-diagram').innerHTML = CM.diagram.render(chord, {
+      showFingers: CM.store.settings().showFingers
+    });
+    $('chord-tip').textContent = chord.tip || '';
+    if (next) {
+      $('next-name').textContent = next.name;
+      $('next-diagram').innerHTML = CM.diagram.render(next, { showFingers: false });
+    }
+  }
+
+  function drawNote(note, next) {
+    $('fretboard').innerHTML = CM.fretboard.render(note, { next: next, start: note.pos });
+    $('ex-caption').textContent = CM.exercises.describe(note);
+    $('ex-next').textContent = next ? 'Next  ·  ' + CM.exercises.describe(next) : '';
+  }
+
   function bindTrainer() {
     CM.trainer.on('start', function (d) {
       hideFinishCard();
@@ -429,6 +458,8 @@
     });
 
     CM.trainer.on('drill', function (d) {
+      // Every drill gets its own count-in, and its own first shape to show.
+      countinDrawn = false;
       $('drill-label').textContent = d.drill.label + ' · ' + d.drill.bpm + ' bpm' +
         (d.total > 1 ? '  (' + (d.index + 1) + '/' + d.total + ')' : '');
       ui.bpm = d.drill.bpm;
@@ -438,25 +469,19 @@
     CM.trainer.on('countin', function (c) {
       $('countin').hidden = false;
       $('countin-n').textContent = c.remaining;
+      // Draw the first shape once, on the first click, and leave it up for the
+      // whole count. Redrawing it every beat would re-run the flash animation
+      // and make it look like the drill had already started.
+      if (countinDrawn) return;
+      countinDrawn = true;
+      if (c.note) drawNote(c.note, c.nextNote);
+      else if (c.chord) drawChord(c.chord, c.next, false);
+      if (c.info) buildBeatDots(c.info.beatsPerBar);
     });
 
     CM.trainer.on('chord', function (c) {
       $('countin').hidden = true;
-      var name = $('chord-name');
-      name.textContent = c.chord.name;
-      name.classList.remove('is-flash');
-      void name.offsetWidth;
-      name.classList.add('is-flash');
-
-      $('chord-diagram').innerHTML = CM.diagram.render(c.chord, {
-        showFingers: CM.store.settings().showFingers
-      });
-      $('chord-tip').textContent = c.chord.tip || '';
-
-      if (c.next) {
-        $('next-name').textContent = c.next.name;
-        $('next-diagram').innerHTML = CM.diagram.render(c.next, { showFingers: false });
-      }
+      drawChord(c.chord, c.next, true);
 
       var info = c.info;
       renderLyric(c.drill, info);
@@ -471,12 +496,7 @@
 
     CM.trainer.on('note', function (n) {
       $('countin').hidden = true;
-      $('fretboard').innerHTML = CM.fretboard.render(n.note, {
-        next: n.next,
-        start: n.note.pos
-      });
-      $('ex-caption').textContent = CM.exercises.describe(n.note);
-      $('ex-next').textContent = n.next ? 'Next  ·  ' + CM.exercises.describe(n.next) : '';
+      drawNote(n.note, n.next);
       $('bar-counter').hidden = true;
       buildBeatDots(n.info.beatsPerBar);
     });

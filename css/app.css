@@ -367,17 +367,23 @@ button { background: none; border: 0; cursor: pointer; }
 .dia-mute   { stroke: var(--dia-mark); stroke-width: 1.9; stroke-linecap: round; fill: none; }
 .dia-position { fill: var(--dia-mark); font-size: 10px; font-weight: 600; font-family: inherit; }
 
+/* The count-in number sits *behind* the stage, not over it. During the count
+   the chord or the note you are about to play is already on screen, and that
+   is the whole point of the count — it has to stay readable.
+   z-index: -1 works because nothing between .stage and <body> creates a
+   stacking context; if one ever gains a background, this goes invisible. */
 .countin {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7rem;
+  font-size: 9rem;
   font-weight: 800;
   color: var(--accent);
+  opacity: 0.2;
   pointer-events: none;
-  z-index: 5;
+  z-index: -1;
 }
 .countin[hidden] { display: none; }
 
