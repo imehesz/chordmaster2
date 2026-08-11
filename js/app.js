@@ -19,6 +19,7 @@
     mode: 'chords',
     pool: [],
     progression: 'pop-G',
+    exercise: 'spider-1234',
     bpm: 80,
     barsPerChord: 1,
     activeScreen: 'practice'
@@ -39,6 +40,7 @@
     ui.bpm = s.lastBpm || 80;
     ui.barsPerChord = s.lastBars || 1;
     ui.progression = CM.progressions.has(s.lastProgression) ? s.lastProgression : 'pop-G';
+    ui.exercise = CM.exercises.has(s.lastExercise) ? s.lastExercise : 'spider-1234';
     ui.pool = (s.lastPool && s.lastPool.length ? s.lastPool : ['Em', 'Am', 'D', 'G', 'C'])
       .filter(function (id) { return CM.chords.has(id); });
 
@@ -49,6 +51,7 @@
 
     buildPool();
     buildProgressionList();
+    buildExerciseList();
     buildLessonList();
     bindNav();
     bindSetup();
@@ -111,9 +114,11 @@
     });
     $('panel-chords').hidden = mode !== 'chords';
     $('panel-progression').hidden = mode !== 'progression';
+    $('panel-exercise').hidden = mode !== 'exercise';
     $('panel-lesson').hidden = mode !== 'lesson';
     if (mode === 'lesson') renderLessonPreview();
     if (mode === 'progression') syncProgressionTempo();
+    if (mode === 'exercise') syncExerciseTempo();
     CM.store.setSetting('lastMode', mode);
     renderSessionTitle();
   }
@@ -122,6 +127,7 @@
     var t = $('session-title');
     if (ui.mode === 'chords') t.textContent = 'Free practice';
     else if (ui.mode === 'progression') t.textContent = CM.progressions.get(ui.progression).name;
+    else if (ui.mode === 'exercise') t.textContent = CM.exercises.get(ui.exercise).name;
     else {
       var day = CM.store.lesson().currentDay;
       t.textContent = 'Day ' + day + ' — ' + CM.lessons.get(day).title;
@@ -217,6 +223,66 @@
     else if (p.beatsPerBar === 3 && ui.bpm < 80) setBpm(90);
   }
 
+  /* ================= fretboard exercises ================= */
+
+  /* The one-line summary that tells you what your hand will be doing. */
+  function exerciseBadge(ex) {
+    if (ex.fingers) return 'Fingers ' + ex.fingers.join('-');
+    if (ex.pairs) {
+      return (ex.pairs.length === 1 ? 'Pair ' : 'Pairs ') + ex.pairs.map(function (p) {
+        return p.join('-');
+      }).join(', ');
+    }
+    return null;
+  }
+
+  function buildExerciseList() {
+    var list = $('ex-list');
+    list.innerHTML = '';
+    [['finger', 'Finger drills'], ['pentatonic', 'Pentatonic boxes']].forEach(function (g) {
+      var group = CM.exercises.byCategory(g[0]);
+      if (!group.length) return;
+      list.appendChild(el('div', 'prog-group', g[1]));
+      group.forEach(function (ex) {
+        var card = el('button', 'prog-card');
+        card.type = 'button';
+        card.dataset.id = ex.id;
+        card.appendChild(el('h4', null, ex.name));
+        card.appendChild(el('p', null, ex.subtitle));
+
+        var row = el('div', 'prog-chords');
+        var badge = exerciseBadge(ex);
+        if (badge) row.appendChild(el('span', 'badge', badge));
+        row.appendChild(el('span', 'badge', 'Frets ' + ex.frets.min + '–' + ex.frets.max));
+        row.appendChild(el('span', 'badge', ex.notes.length + ' notes'));
+        card.appendChild(row);
+
+        card.addEventListener('click', function () {
+          ui.exercise = ex.id;
+          CM.store.setSetting('lastExercise', ex.id);
+          syncExerciseList();
+          syncExerciseTempo();
+          renderSessionTitle();
+        });
+        list.appendChild(card);
+      });
+    });
+    syncExerciseList();
+  }
+
+  function syncExerciseList() {
+    Array.prototype.forEach.call($('ex-list').querySelectorAll('.prog-card'), function (c) {
+      c.classList.toggle('is-on', c.dataset.id === ui.exercise);
+    });
+  }
+
+  /* These are slow-practice drills — a tempo carried over from strumming will
+     be far too fast to place four fingers cleanly. Come down, never up. */
+  function syncExerciseTempo() {
+    var ex = CM.exercises.get(ui.exercise);
+    if (ui.bpm > ex.bpm) setBpm(ex.bpm);
+  }
+
   function renderLessonPreview() {
     var day = CM.store.lesson().currentDay;
     var lesson = CM.lessons.get(day);
@@ -304,6 +370,13 @@
         label: p.name,
         drills: [{ type: 'progression', label: p.name, progression: p.id, bpm: ui.bpm }]
       };
+    } else if (ui.mode === 'exercise') {
+      var ex = CM.exercises.get(ui.exercise);
+      session = {
+        kind: 'exercise',
+        label: ex.name,
+        drills: [{ type: 'exercise', label: ex.name, exercise: ex.id, bpm: ui.bpm }]
+      };
     } else {
       session = CM.trainer.sessionForDay(CM.store.lesson().currentDay);
     }
@@ -313,14 +386,20 @@
   }
 
   function bindTrainer() {
-    CM.trainer.on('start', function () {
+    CM.trainer.on('start', function (d) {
       hideFinishCard();
       document.body.classList.add('is-playing-mode');
       $('go').textContent = 'Stop';
       $('go').classList.add('is-playing');
       $('setup').hidden = true;
-      $('next-strip').hidden = false;
+      // Exercises draw a neck and carry their own "next" line, so the chord
+      // card and the next-chord strip stand down for the duration.
+      var isExercise = d.session.kind === 'exercise';
+      $('chord-card').hidden = isExercise;
+      $('ex-card').hidden = !isExercise;
+      $('next-strip').hidden = isExercise;
       $('beat-row').hidden = false;
+      $('step-bar').hidden = false;
       showScreen('practice');
       requestWake();
       startRaf();
@@ -357,6 +436,7 @@
       }
 
       var info = c.info;
+      renderLyric(c.drill, info);
       if (info.totalBars != null) {
         $('bar-counter').hidden = false;
         $('bar-counter').textContent = 'Bar ' + (info.barIndex + 1) + ' of ' + info.totalBars;
@@ -366,9 +446,23 @@
       buildBeatDots(info.beatsPerBar);
     });
 
+    CM.trainer.on('note', function (n) {
+      $('countin').hidden = true;
+      $('fretboard').innerHTML = CM.fretboard.render(n.note, {
+        next: n.next,
+        start: n.note.pos
+      });
+      $('ex-caption').textContent = CM.exercises.describe(n.note);
+      $('ex-next').textContent = n.next ? 'Next  ·  ' + CM.exercises.describe(n.next) : '';
+      $('bar-counter').hidden = true;
+      buildBeatDots(n.info.beatsPerBar);
+    });
+
     CM.trainer.on('beat', function (b) {
       buildBeatDots(b.beatsPerBar);
       beatNodes.forEach(function (n, i) { n.classList.toggle('is-on', i === b.beatInBar); });
+      // The words move with the bar, which is not always a chord change.
+      renderLyric(CM.trainer.currentDrill(), b.info);
       if (b.info.totalBars != null) {
         $('bar-counter').textContent = 'Bar ' + (b.info.barIndex + 1) + ' of ' + b.info.totalBars;
       }
@@ -422,7 +516,7 @@
     finishDay = null;
     $('finish-card').hidden = true;
     $('chord-card').hidden = false;
-    $('step-bar').hidden = false;
+    $('step-bar').hidden = true;
     $('setup').hidden = false;
     $('drill-label').textContent = 'Pick something to work on';
   }
@@ -456,17 +550,76 @@
     });
   }
 
+  /* ================= lyrics ================= */
+
+  var lyricBar = -1;
+
+  /* The next bar that actually has words, so an instrumental bar still shows
+     you what is coming rather than going blank. */
+  function upcomingLyric(lines, from) {
+    for (var i = 1; i <= lines.length; i++) {
+      var line = lines[(from + i) % lines.length];
+      if (line) return line;
+    }
+    return '';
+  }
+
+  function renderLyric(drill, info) {
+    var prog = drill && drill.progression;
+    var box = $('lyric-line');
+    if (!prog || !prog.hasLyrics || !info || info.barIndex == null) {
+      clearLyric();
+      return;
+    }
+    if (info.barIndex === lyricBar) return; // same bar, nothing to redraw
+    lyricBar = info.barIndex;
+    box.hidden = false;
+    $('lyric-now').textContent = prog.lyrics[info.barIndex] || '';
+    $('lyric-next').textContent = upcomingLyric(prog.lyrics, info.barIndex);
+  }
+
+  function clearLyric() {
+    lyricBar = -1;
+    $('lyric-line').hidden = true;
+    $('lyric-now').textContent = '';
+    $('lyric-next').textContent = '';
+  }
+
+  var IDLE_TIP = 'Choose a mode below and hit start.';
+
+  /* Back to the empty state. Without this the last chord stays on screen after
+     you stop, and once the setup panel reappears there is no room for it. */
+  function clearChordDisplay() {
+    var name = $('chord-name');
+    name.textContent = '–';
+    name.classList.remove('is-flash');
+    $('chord-diagram').innerHTML = '';
+    $('chord-tip').textContent = IDLE_TIP;
+    $('next-name').textContent = '';
+    $('next-diagram').innerHTML = '';
+    beatNodes = [];
+    $('beat-row').innerHTML = '';
+    clearLyric();
+    $('fretboard').innerHTML = '';
+    $('ex-caption').textContent = '';
+    $('ex-next').textContent = '';
+  }
+
   function resetStage() {
     document.body.classList.remove('is-playing-mode');
     $('go').textContent = 'Start';
     $('go').classList.remove('is-playing');
     $('setup').hidden = false;
+    $('ex-card').hidden = true;
+    $('chord-card').hidden = false;
     $('next-strip').hidden = true;
     $('beat-row').hidden = true;
     $('bar-counter').hidden = true;
     $('countin').hidden = true;
+    $('step-bar').hidden = true;
     $('step-fill').style.width = '0%';
     $('drill-label').textContent = 'Pick something to work on';
+    clearChordDisplay();
     releaseWake();
     stopRaf();
   }

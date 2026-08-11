@@ -5,7 +5,7 @@
  *
  * Bump CACHE whenever you ship a change, or the old files keep being served.
  */
-var CACHE = 'chordmaster2-v2';
+var CACHE = 'chordmaster2-v4';
 
 var SHELL = [
   './',
@@ -13,8 +13,10 @@ var SHELL = [
   'css/app.css',
   'js/chords.js',
   'js/progressions.js',
+  'js/exercises.js',
   'js/lessons.js',
   'js/diagram.js',
+  'js/fretboard.js',
   'js/audio.js',
   'js/trainer.js',
   'js/storage.js',

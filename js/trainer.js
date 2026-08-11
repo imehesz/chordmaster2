@@ -9,6 +9,11 @@
  *
  *   RandomProvider       shuffles a pool, never repeating a chord twice running
  *   ProgressionProvider  walks a fixed list of bars and loops
+ *   ExerciseProvider     walks a fixed list of single notes and loops
+ *
+ * The first two answer with a chord id; the third answers with a note, and its
+ * drills carry kind 'exercise' so the UI knows to draw a neck instead of a
+ * chord box.
  */
 (function (CM) {
   'use strict';
@@ -114,14 +119,56 @@
     };
   };
 
+  /* One note per step, looping forever. `beatsPerNote` above 1 is slow practice:
+     the note stays put while the click keeps time. */
+  function ExerciseProvider(notes, beatsPerNote, beatsPerBar) {
+    this.notes = notes;
+    this.beatsPerNote = Math.max(1, beatsPerNote || 1);
+    this.beatsPerBar = beatsPerBar || 4;
+    this.totalBeats = notes.length * this.beatsPerNote;
+    this.finite = false;
+  }
+
+  ExerciseProvider.prototype.at = function (beat) {
+    var pos = ((beat % this.totalBeats) + this.totalBeats) % this.totalBeats;
+    var idx = Math.floor(pos / this.beatsPerNote);
+    var into = pos - idx * this.beatsPerNote;
+    return {
+      chord: null,
+      next: null,
+      note: this.notes[idx],
+      nextNote: this.notes[(idx + 1) % this.notes.length],
+      stepIndex: idx,
+      stepCount: this.notes.length,
+      beatsInStep: this.beatsPerNote,
+      beatInStep: into,
+      beatsPerBar: this.beatsPerBar,
+      // Counted off the absolute beat: a run rarely divides evenly into bars,
+      // and the click has to stay steady across the loop point regardless.
+      beatInBar: ((beat % this.beatsPerBar) + this.beatsPerBar) % this.beatsPerBar,
+      barIndex: null,
+      totalBars: null,
+      loopBeat: pos,
+      loopBeats: this.totalBeats,
+      boundary: into === 0
+    };
+  };
+
   /* ---------------- drill construction ---------------- */
 
   function buildDrill(spec) {
     // spec: { type, chords|progression, sub, barsPerChord, beatsPerBar, bpm, minutes, label }
     var bpm = spec.bpm || 80;
-    var drill = { label: spec.label || '', bpm: bpm, raw: spec };
+    var drill = { label: spec.label || '', bpm: bpm, raw: spec, kind: 'chord' };
 
-    if (spec.type === 'progression') {
+    if (spec.type === 'exercise') {
+      var ex = CM.exercises.get(spec.exercise);
+      drill.kind = 'exercise';
+      drill.exercise = ex;
+      drill.provider = new ExerciseProvider(ex.notes,
+        spec.beatsPerNote || ex.beatsPerNote, ex.beatsPerBar);
+      drill.label = drill.label || ex.name;
+    } else if (spec.type === 'progression') {
       var built = CM.lessons.drillBars(spec);
       var bpb = spec.beatsPerBar || built.progression.beatsPerBar || 4;
       drill.provider = new ProgressionProvider(built.bars, bpb);
@@ -203,7 +250,10 @@
 
     var info = drill.provider.at(beat);
     CM.audio.tick(time, info.beatInBar === 0);
-    if (info.boundary && CM.chords.has(info.chord)) {
+    if (!info.boundary) return;
+    if (drill.kind === 'exercise') {
+      CM.audio.pluck(info.note.midi, time);
+    } else if (CM.chords.has(info.chord)) {
       CM.audio.strum(CM.chords.get(info.chord), time);
     }
   }
@@ -230,12 +280,16 @@
       state.stepStartAt = CM.audio.now();
       state.stepSeconds = info.beatsInStep * secPerBeat;
       state.current = info;
-      emit('chord', {
-        chord: CM.chords.get(info.chord),
-        next: CM.chords.has(info.next) ? CM.chords.get(info.next) : null,
-        info: info,
-        drill: drill
-      });
+      if (drill.kind === 'exercise') {
+        emit('note', { note: info.note, next: info.nextNote, info: info, drill: drill });
+      } else {
+        emit('chord', {
+          chord: CM.chords.get(info.chord),
+          next: CM.chords.has(info.next) ? CM.chords.get(info.next) : null,
+          info: info,
+          drill: drill
+        });
+      }
     }
 
     emit('beat', {

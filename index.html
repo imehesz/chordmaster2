@@ -37,6 +37,17 @@
         <div class="chord-tip" id="chord-tip">Choose a mode below and hit start.</div>
       </div>
 
+      <div class="ex-card" id="ex-card" hidden>
+        <div class="fretboard-slot" id="fretboard"></div>
+        <div class="ex-caption" id="ex-caption"></div>
+        <div class="ex-next" id="ex-next"></div>
+      </div>
+
+      <div class="lyric-line" id="lyric-line" hidden>
+        <div class="lyric-now" id="lyric-now"></div>
+        <div class="lyric-next" id="lyric-next"></div>
+      </div>
+
       <div class="countin" id="countin" hidden><span id="countin-n">4</span></div>
 
       <div class="finish-card" id="finish-card" hidden>
@@ -65,6 +76,7 @@
       <div class="seg" role="tablist" aria-label="Practice mode">
         <button class="seg-btn is-on" data-mode="chords" type="button">Chords</button>
         <button class="seg-btn" data-mode="progression" type="button">Progressions</button>
+        <button class="seg-btn" data-mode="exercise" type="button">Fretboard</button>
         <button class="seg-btn" data-mode="lesson" type="button">Today</button>
       </div>
 
@@ -98,6 +110,12 @@
       <div class="panel" id="panel-progression" hidden>
         <div class="panel-head"><span>Progression</span></div>
         <div class="prog-list" id="prog-list"></div>
+      </div>
+
+      <!-- fretboard exercises -->
+      <div class="panel" id="panel-exercise" hidden>
+        <div class="panel-head"><span>Fretboard exercise</span></div>
+        <div class="prog-list" id="ex-list"></div>
       </div>
 
       <!-- today's lesson -->
@@ -246,8 +264,10 @@
 
 <script src="js/chords.js"></script>
 <script src="js/progressions.js"></script>
+<script src="js/exercises.js"></script>
 <script src="js/lessons.js"></script>
 <script src="js/diagram.js"></script>
+<script src="js/fretboard.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/trainer.js"></script>
 <script src="js/storage.js"></script>

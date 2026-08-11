@@ -136,6 +136,16 @@
   }
 
   /**
+   * A single string, for the fretboard exercises. Shares the chord voice
+   * toggle - it is the same guitar, just one note of it.
+   */
+  function pluck(midi, time) {
+    if (!settings.chord) return;
+    if (!ensureContext()) return;
+    playNote(midi, time, 0.26);
+  }
+
+  /**
    * A soft two-partial bell, used as feedback while dragging the volume
    * slider. It deliberately ignores the metronome and chord toggles - it is
    * feedback for the volume control itself, so it has to be audible whatever
@@ -260,6 +270,7 @@
     clock: new Clock(),
     unlock: unlock,
     strum: strum,
+    pluck: pluck,
     ding: ding,
 
     tick: function (time, accent) {

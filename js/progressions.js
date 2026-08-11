@@ -4,8 +4,13 @@
  * it lasts, so the trainer can advance in time with the metronome instead of
  * on a plain wall-clock timer.
  *
- * Songs here are traditional / public domain, and only the chord changes are
- * stored - no lyrics, no tab.
+ * Songs here are traditional / public domain. A song may carry a `lyrics`
+ * array: one short phrase per bar, exactly as long as `bars`, so the words on
+ * screen follow the bar counter rather than the chord (a chord can hold across
+ * two lines). An empty string is an instrumental bar. Still no tab.
+ *
+ * The lines below are placeholders - fill them in bar by bar. tools/validate.js
+ * checks the array length against the bars, so a mis-split shows up there.
  */
 (function (CM) {
   'use strict';
@@ -130,24 +135,61 @@
       id: 'rising-sun', name: 'House of the Rising Sun', subtitle: 'traditional folk ballad', key: 'Am',
       category: 'song', numerals: [], beatsPerBar: 6,
       bars: bars('Am C D F Am C E E', 6),
+      lyrics: [
+        '…', // Am
+        '…', // C
+        '…', // D
+        '…', // F
+        '…', // Am
+        '…', // C
+        '…', // E
+        '…'  // E
+      ],
       note: 'Counted in 6. Eight bars, then it repeats. The F is the only hard one — Fmaj7 works if you need it.'
     },
     {
       id: 'saints', name: 'When the Saints Go Marching In', subtitle: 'traditional', key: 'G',
       category: 'song', numerals: [], beatsPerBar: 4,
       bars: bars('G G G G G C C G G D D G', 4),
+      lyrics: [
+        '…', // G
+        '…', // G
+        '…', // G
+        '…', // G
+        '…', // G
+        '…', // C
+        '…', // C
+        '…', // G
+        '…', // G
+        '…', // D
+        '…', // D
+        '…'  // G
+      ],
       note: 'Three chords, twelve bars, and it moves. Good first song to play with someone else.'
     },
     {
       id: 'amazing-grace', name: 'Amazing Grace', subtitle: 'traditional, in 3', key: 'G',
       category: 'song', numerals: [], beatsPerBar: 3,
       bars: bars('G G C G G D G G', 3),
+      lyrics: [
+        '…', // G
+        '…', // G
+        '…', // C
+        '…', // G
+        '…', // G
+        '…', // D
+        '…', // G
+        '…'  // G
+      ],
       note: 'A waltz — count 1-2-3. Simplified to one chord per bar.'
     }
   ];
 
   /* Derive the distinct chord list and total beats for each progression. */
   PROGRESSIONS.forEach(function (p) {
+    // A short lyrics array would silently pin the words to the wrong bar, so
+    // treat a mismatched one as absent rather than half-showing it.
+    p.hasLyrics = !!(p.lyrics && p.lyrics.length === p.bars.length);
     var seen = {};
     p.chords = [];
     p.totalBeats = 0;

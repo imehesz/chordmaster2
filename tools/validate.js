@@ -16,8 +16,10 @@ const JS = path.join(ROOT, 'js');
 global.window = {};
 require(path.join(JS, 'chords.js'));
 require(path.join(JS, 'progressions.js'));
+require(path.join(JS, 'exercises.js'));
 require(path.join(JS, 'lessons.js'));
 require(path.join(JS, 'diagram.js'));
+require(path.join(JS, 'fretboard.js'));
 const CM = global.window.CM;
 
 // trainer.js closes over `window`; evaluate it against the same namespace.
@@ -147,6 +149,79 @@ CM.progressions.all.forEach(p => {
     err(`${p.id}: plays [${played}] but is written [${written}]`);
   }
   if (prov.at(prov.totalBeats).chord !== prov.at(0).chord) err(`${p.id}: does not loop cleanly`);
+
+  // Lyrics are indexed by bar. One short or long and every line after the gap
+  // sits on the wrong chord, which is impossible to spot by reading the file.
+  if (p.lyrics) {
+    if (p.lyrics.length !== p.bars.length) {
+      err(`${p.id}: ${p.lyrics.length} lyric lines for ${p.bars.length} bars`);
+    } else if (p.lyrics.every(line => !line || line === '…')) {
+      warn(`${p.id}: lyric lines are still placeholders`);
+    }
+  }
+});
+
+/* ================= fretboard exercises ================= */
+
+const exIds = new Set();
+CM.exercises.all.forEach(ex => {
+  if (exIds.has(ex.id)) err(`duplicate exercise id "${ex.id}"`);
+  exIds.add(ex.id);
+  if (!ex.notes.length) err(`exercise ${ex.id}: expands to no notes`);
+
+  ex.notes.forEach((n, i) => {
+    if (n.string < 0 || n.string > 5) err(`${ex.id}: note ${i} is on string ${n.string}`);
+    if (n.fret < 1 || n.fret > 15) err(`${ex.id}: note ${i} is at fret ${n.fret}`);
+    if (n.finger < 1 || n.finger > 4) err(`${ex.id}: note ${i} uses finger ${n.finger}`);
+    // The neck view shows five frets from the hand position; a note outside
+    // that window would be played but never drawn.
+    const off = n.fret - n.pos;
+    if (off < 0 || off >= CM.fretboard.visibleFrets) {
+      err(`${ex.id}: note ${i} sits ${off} frets from the hand position — off the drawn neck`);
+    }
+    if (n.midi !== CM.chords.openMidi[n.string] + n.fret) err(`${ex.id}: note ${i} has the wrong pitch`);
+  });
+
+  // The same fret twice running is a stutter, not a drill. The wrap from the
+  // last note back to the first counts — these exercises loop.
+  ex.notes.forEach((n, i) => {
+    const p = ex.notes[(i - 1 + ex.notes.length) % ex.notes.length];
+    if (ex.notes.length > 1 && p.string === n.string && p.fret === n.fret) {
+      err(`${ex.id}: note ${i} repeats fret ${n.fret} on string ${6 - n.string}`);
+    }
+  });
+
+  // A box is a hand-drawn shape. Proving it spells the scale it claims is the
+  // only way to know a typo has not quietly put a wrong note in the middle.
+  if (ex.scale) {
+    const wanted = CM.exercises.scales[ex.scale];
+    if (!wanted) err(`${ex.id}: unknown scale "${ex.scale}"`);
+    else {
+      const found = new Set();
+      ex.notes.forEach((n, i) => {
+        const pc = ((n.midi % 12) + 12) % 12;
+        found.add(pc);
+        if (!wanted.includes(pc)) {
+          err(`${ex.id}: note ${i} (string ${6 - n.string} fret ${n.fret}) is not in ${ex.scale}`);
+        }
+      });
+      wanted.forEach(pc => {
+        if (!found.has(pc)) warn(`${ex.id}: never plays one of the ${ex.scale} notes`);
+      });
+    }
+  }
+
+  const prov = CM.trainer.buildDrill({ type: 'exercise', exercise: ex.id, bpm: 60 }).provider;
+  if (prov.totalBeats !== ex.notes.length * ex.beatsPerNote) err(`${ex.id}: provider length disagrees with the note list`);
+  for (let beat = 0; beat < prov.totalBeats; beat++) {
+    const info = prov.at(beat);
+    if (!info.note) err(`${ex.id}: no note at beat ${beat}`);
+    if (info.boundary && info.note !== ex.notes[beat / ex.beatsPerNote]) {
+      err(`${ex.id}: plays the wrong note at beat ${beat}`);
+    }
+  }
+  if (prov.at(prov.totalBeats).note !== prov.at(0).note) err(`${ex.id}: does not loop cleanly`);
+  if (ex.bpm < 40 || ex.bpm > 120) warn(`${ex.id}: starting tempo ${ex.bpm} bpm`);
 });
 
 /* ================= the 30 day plan ================= */
@@ -233,10 +308,29 @@ const jsCreated = new Set([...app.matchAll(/el\('[a-z]+',\s*'([^' ]+)/g)].map(m 
   }
 });
 
+/* An author `display` rule beats the UA's `[hidden] { display: none }`, so any
+ * element JS hides with .hidden whose class sets a display needs its own
+ * [hidden] rule — otherwise it simply never disappears. */
+const esc = c => c.replace(/-/g, '\\-');
+new Set([...app.matchAll(/\$\('([^']+)'\)\.hidden\s*=/g)].map(m => m[1])).forEach(id => {
+  const tag = html.match(new RegExp(`<[^>]*\\bid="${id}"[^>]*>`));
+  if (!tag) return;
+  const clsAttr = tag[0].match(/class="([^"]+)"/);
+  const classes = clsAttr ? clsAttr[1].split(/\s+/) : [];
+  const setsDisplay = classes.some(c => new RegExp(`\\.${esc(c)}\\s*\\{[^}]*display\\s*:`).test(css));
+  if (!setsDisplay) return;
+  const guarded = new RegExp(`#${esc(id)}\\[hidden\\]`).test(css) ||
+    classes.some(c => new RegExp(`\\.${esc(c)}\\[hidden\\]`).test(css));
+  if (!guarded) {
+    err(`#${id} is toggled via .hidden and its class sets display — add a [hidden] rule or it will never hide`);
+  }
+});
+
 const classes = new Set();
 [...app.matchAll(/el\('[a-z]+',\s*'([^']+)'/g)].forEach(m => m[1].split(/\s+/).forEach(c => classes.add(c)));
 [...app.matchAll(/classList\.(?:add|toggle)\('([^']+)'/g)].forEach(m => classes.add(m[1]));
 [...fs.readFileSync(path.join(JS, 'diagram.js'), 'utf8').matchAll(/class="(dia-[a-z]+)"/g)].forEach(m => classes.add(m[1]));
+[...fs.readFileSync(path.join(JS, 'fretboard.js'), 'utf8').matchAll(/class="(fb-[a-z]+)"/g)].forEach(m => classes.add(m[1]));
 classes.forEach(c => {
   if (c && !new RegExp(`\\.${c.replace(/-/g, '\\-')}\\b`).test(css)) warn(`class .${c} is set by JS but never styled`);
 });
@@ -249,7 +343,7 @@ const shell = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 
 /* ================= report ================= */
 
-console.log(`${CM.chords.all.length} chords · ${CM.progressions.all.length} progressions · ${CM.lessons.days.length} days · ${CM.lessons.days.reduce((s, d) => s + d.minutes, 0)} minutes of drills`);
+console.log(`${CM.chords.all.length} chords · ${CM.progressions.all.length} progressions · ${CM.exercises.all.length} exercises · ${CM.lessons.days.length} days · ${CM.lessons.days.reduce((s, d) => s + d.minutes, 0)} minutes of drills`);
 if (warns.length) {
   console.log(`\n${warns.length} warning(s):`);
   warns.forEach(w => console.log('  · ' + w));
