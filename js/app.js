@@ -143,6 +143,7 @@
     if (mode === 'progression') syncProgressionTempo();
     if (mode === 'exercise') syncExerciseTempo();
     CM.store.setSetting('lastMode', mode);
+    syncLessonMark();
     renderSessionTitle();
   }
 
@@ -330,11 +331,31 @@
       line.appendChild(el('span', null, d.bpm + ' bpm · ' + d.minutes + ' min'));
       box.appendChild(line);
     });
+    syncLessonMark();
+  }
+
+  // The same manual, reversible tick as on the plan card, kept under the
+  // transport so finishing a day does not mean walking back to the list.
+  function syncLessonMark() {
+    var mark = $('go-mark');
+    if (!mark) return;
+    mark.hidden = ui.mode !== 'lesson';
+    if (mark.hidden) return;
+    var done = CM.store.isLessonComplete(CM.store.lesson().currentDay);
+    mark.classList.toggle('is-done', done);
+    mark.innerHTML = done ? '&#10003; Done — tap to undo' : 'Mark as done';
   }
 
   function bindSetup() {
     Array.prototype.forEach.call(document.querySelectorAll('.seg-btn'), function (b) {
       b.addEventListener('click', function () { setMode(b.dataset.mode); });
+    });
+
+    $('go-mark').addEventListener('click', function () {
+      CM.store.toggleLesson(CM.store.lesson().currentDay);
+      renderLessonPreview();   // redraws the "already done" line, and re-syncs the button
+      updatePlanProgress();
+      renderStats();
     });
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-bpm]'), function (b) {

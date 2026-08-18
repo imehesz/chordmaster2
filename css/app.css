@@ -610,6 +610,21 @@ button { background: none; border: 0; cursor: pointer; }
 .go.is-playing { background: var(--stop); color: var(--stop-ink); }
 .go:active { transform: translateY(1px); }
 
+/* Ticking the day off without walking back to the plan. Lesson mode only. */
+.go-mark {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+.go-mark.is-done { border-color: var(--go); color: var(--go); background: transparent; }
+.go-mark:active { transform: translateY(1px); }
+
 /* ============ tab bar ============ */
 /* The extra bottom padding keeps every tap target clear of the Android
    gesture bar, which happily swallows anything in the last few pixels. */
