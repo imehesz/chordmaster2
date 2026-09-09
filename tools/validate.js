@@ -331,6 +331,7 @@ const classes = new Set();
 [...app.matchAll(/classList\.(?:add|toggle)\('([^']+)'/g)].forEach(m => classes.add(m[1]));
 [...fs.readFileSync(path.join(JS, 'diagram.js'), 'utf8').matchAll(/class="(dia-[a-z]+)"/g)].forEach(m => classes.add(m[1]));
 [...fs.readFileSync(path.join(JS, 'fretboard.js'), 'utf8').matchAll(/class="(fb-[a-z]+)"/g)].forEach(m => classes.add(m[1]));
+[...fs.readFileSync(path.join(JS, 'circle.js'), 'utf8').matchAll(/class="(cof-[a-z-]+)"/g)].forEach(m => classes.add(m[1]));
 classes.forEach(c => {
   if (c && !new RegExp(`\\.${c.replace(/-/g, '\\-')}\\b`).test(css)) warn(`class .${c} is set by JS but never styled`);
 });

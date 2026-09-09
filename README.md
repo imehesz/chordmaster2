@@ -30,7 +30,8 @@ requirement is that `.json` files are not aggressively cached.
 
 - **Chords** — pick a pool of chords and drill them at random. This is the old
   app's behaviour, but beat-based instead of seconds-based, so the changes line
-  up with the click.
+  up with the click. A circle of fifths sits above the chord grid: tap a key and
+  the pool becomes that key's six chords, so "practise in G" is one tap.
 - **Progressions** — 20 built-in progressions, from two-chord starters through
   the 12-bar blues to three traditional songs.
 - **Today** — runs the current day of the 30 day plan, drill by drill, changing
@@ -65,8 +66,11 @@ index.html          the four tabs, all markup
 css/app.css         two themes, entirely token-driven
 js/chords.js        32 chord shapes (frets, fingers, barres)
 js/progressions.js  20 progressions as lists of bars
+js/exercises.js     fretboard exercises as sequences of notes
 js/lessons.js       the 30 day plan
 js/diagram.js       chord shape -> inline SVG
+js/fretboard.js     one note on a slice of the neck -> inline SVG
+js/circle.js        the circle of fifths, and the key -> chords lookup
 js/audio.js         Web Audio: metronome, plucked-string synth, beat clock
 js/tuner.js         seven tunings and the reference-pitch loop
 js/trainer.js       the practice engine
@@ -97,6 +101,23 @@ shape:
 `js/diagram.js` turns that into SVG whose every stroke is a CSS custom property,
 which is why the diagrams recolour themselves in night and day mode with no
 second set of assets. Adding a chord is one object; no image files exist.
+
+### The wheel is a lookup table
+
+`js/circle.js` draws the circle of fifths, but the drawing is the smaller half.
+The layout *is* the music theory: a key's six chords are its own slot plus the
+two either side of it, majors on the outer ring and their relative minors on the
+inner one. So picking a key is index arithmetic on one twelve-entry array, and
+the highlight is always three slots wide.
+
+Two things it is honest about. Chords the library has no shape for are drawn
+outlined rather than filled, and keys with fewer than three playable chords —
+the far side of the wheel, where a beginner has no business yet — are faded and
+cannot be picked. The wheel still shows all twelve, because a circle of fifths
+with holes in it is not a circle of fifths.
+
+The highlight runs both ways: it lights up whenever the pool happens to be a
+key, and clears itself the moment you tap a single chord in the grid.
 
 ### The sound
 

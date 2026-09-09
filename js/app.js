@@ -22,6 +22,7 @@
     exercise: 'spider-1234',
     bpm: 80,
     barsPerChord: 1,
+    circleKey: null,   // { slot, tier } of the key picked on the wheel
     activeScreen: 'practice'
   };
 
@@ -61,6 +62,7 @@
 
     var visit = CM.store.recordVisit();
 
+    bindCircle();
     buildPool();
     buildProgressionList();
     buildExerciseList();
@@ -197,6 +199,100 @@
     });
     $('pool-count').textContent = ui.pool.length + ' selected';
     CM.store.setSetting('lastPool', ui.pool);
+    syncCircleKey();
+  }
+
+  /* ================= circle of fifths ================= */
+
+  function bindCircle() {
+    var body = $('cof-body');
+
+    setCircleOpen(CM.store.settings().showCircle !== false);
+
+    $('cof-toggle').addEventListener('click', function () {
+      var open = body.hidden;
+      setCircleOpen(open);
+      CM.store.setSetting('showCircle', open);
+    });
+
+    $('cof-wheel').addEventListener('click', function (e) {
+      pickKey(e.target.closest ? e.target.closest('.cof-seg') : null);
+    });
+    // The wedges are focusable, and a <g role="button"> does not turn a key
+    // press into a click by itself.
+    $('cof-wheel').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var seg = e.target.closest ? e.target.closest('.cof-seg') : null;
+      if (!seg) return;
+      e.preventDefault();
+      pickKey(seg);
+    });
+  }
+
+  function setCircleOpen(open) {
+    $('cof-body').hidden = !open;
+    $('cof-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) renderCircle();
+  }
+
+  function pickKey(seg) {
+    if (!seg || seg.classList.contains('is-off')) return;
+    var k = CM.circle.key(Number(seg.getAttribute('data-slot')), seg.getAttribute('data-tier'));
+    ui.circleKey = { slot: k.slot, tier: k.tier };
+    ui.pool = k.ids.slice();
+    syncPool();
+  }
+
+  /* The wheel and the chord grid are two views of one pool, so a key stays lit
+     only while the pool still is that key. Tapping a single chord, or a filter
+     chip, quietly drops the highlight - and a pool that happens to be a key
+     lights it up without the wheel being touched at all. */
+  function syncCircleKey() {
+    if (!ui.circleKey || !samePool(CM.circle.key(ui.circleKey.slot, ui.circleKey.tier).ids)) {
+      ui.circleKey = null;
+      CM.circle.keys().some(function (k) {
+        if (!k.playable || !samePool(k.ids)) return false;
+        ui.circleKey = { slot: k.slot, tier: k.tier };
+        return true;
+      });
+    }
+    renderCircle();
+  }
+
+  function samePool(ids) {
+    return ids.length === ui.pool.length && ids.every(function (id) {
+      return ui.pool.indexOf(id) !== -1;
+    });
+  }
+
+  function renderCircle() {
+    if ($('cof-body').hidden) return;
+    $('cof-wheel').innerHTML = CM.circle.render(ui.circleKey);
+
+    var degrees = $('cof-degrees');
+    degrees.innerHTML = '';
+    if (!ui.circleKey) {
+      $('cof-note').textContent =
+        'Tap a key to load its chords. Faded keys need shapes the app does not teach yet.';
+      return;
+    }
+
+    var k = CM.circle.key(ui.circleKey.slot, ui.circleKey.tier);
+    var missing = [];
+    k.chords.forEach(function (c) {
+      degrees.appendChild(el('span', 'cof-deg' + (c.id ? '' : ' is-absent'),
+        '<i>' + c.degree + '</i>' + CM.circle.pretty(c.name)));
+      if (!c.id) missing.push(CM.circle.pretty(c.name));
+    });
+
+    $('cof-note').textContent = k.ids.length + ' of them in the pool' + (missing.length
+      ? ' — ' + andList(missing) + (missing.length > 1 ? ' are' : ' is') + ' not in the app yet.'
+      : '.');
+  }
+
+  function andList(items) {
+    if (items.length < 2) return items[0] || '';
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
   }
 
   function buildProgressionList() {

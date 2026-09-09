@@ -66,7 +66,7 @@
       day: 5,
       title: 'Three Fingers In A Row',
       focus: 'A major, and your first I–IV–V',
-      brief: 'A major crams three fingers into one fret. Curl them so the high E still rings — that is the hard part. With A, D and E you now have a complete key, which is enough for a huge amount of blues, folk and rock.',
+      brief: 'A major crams three fingers into one fret. Curl them so the high E still rings — that is the hard part. With A, D and E you now have a complete key, which is enough for a huge amount of blues, folk and rock. Those three sit side by side on the circle of fifths above the chord pool — that is the whole message of that wheel: neighbours sound good together.',
       newChords: ['A'],
       drills: [
         { type: 'random', label: 'Meet A', chords: ['A'], barsPerChord: 2, bpm: 60, minutes: 3 },
@@ -116,7 +116,7 @@
       day: 9,
       title: 'The Four Chords',
       focus: 'I – V – vi – IV in G',
-      brief: 'G, D, Em, C. This progression is behind a genuinely absurd number of pop songs, and you can already play all four shapes. Today it stops being four separate chords and becomes one repeating thing your hands know.',
+      brief: 'G, D, Em, C. This progression is behind a genuinely absurd number of pop songs, and you can already play all four shapes. Today it stops being four separate chords and becomes one repeating thing your hands know. Tap G on the circle of fifths and these four light up, along with Am and Bm — songs mostly stay inside one of those little neighbourhoods, which is why the same handful of chords keeps turning up.',
       newChords: [],
       drills: [
         { type: 'progression', label: 'The four chords, slow', progression: 'pop-G', bpm: 64, minutes: 5 },

@@ -100,6 +100,19 @@
           <button class="chip" data-filter="barre" type="button">Barre</button>
           <button class="chip" data-filter="none" type="button">Clear</button>
         </div>
+        <!-- circle of fifths: tap a key, its chords become the pool -->
+        <div class="cof">
+          <button class="cof-toggle" id="cof-toggle" type="button" aria-expanded="true" aria-controls="cof-body">
+            <span>Circle of fifths</span>
+            <span class="cof-caret" aria-hidden="true">&#9662;</span>
+          </button>
+          <div class="cof-body" id="cof-body">
+            <div class="cof-wheel" id="cof-wheel"></div>
+            <div class="cof-degrees" id="cof-degrees"></div>
+            <div class="cof-note" id="cof-note"></div>
+          </div>
+        </div>
+
         <div class="pool-grid" id="pool-grid"></div>
         <div class="row-field">
           <label for="bars-per-chord">Hold each chord</label>
@@ -314,6 +327,7 @@
 <script src="js/lessons.js?v={{version}}"></script>
 <script src="js/diagram.js?v={{version}}"></script>
 <script src="js/fretboard.js?v={{version}}"></script>
+<script src="js/circle.js?v={{version}}"></script>
 <script src="js/audio.js?v={{version}}"></script>
 <script src="js/tuner.js?v={{version}}"></script>
 <script src="js/trainer.js?v={{version}}"></script>

@@ -514,6 +514,100 @@ button { background: none; border: 0; cursor: pointer; }
   color: var(--accent-ink);
 }
 
+/* ---- circle of fifths ----
+   Tap a key and the pool becomes its chords. The wheel itself is drawn by
+   js/circle.js; everything here is state, so both themes come for free. */
+.cof { margin-bottom: 12px; }
+.cof-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 13px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.cof-caret { transition: transform 0.18s ease; }
+.cof-toggle[aria-expanded="true"] .cof-caret { transform: rotate(180deg); }
+.cof-body { padding-top: 12px; }
+.cof-body[hidden] { display: none; }
+
+.cof-wheel { max-width: 320px; margin: 0 auto; }
+.cof-svg { display: block; width: 100%; height: auto; }
+
+.cof-seg { cursor: pointer; }
+.cof-wedge { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.cof-name { fill: var(--text); font-weight: 650; }
+.cof-alt { fill: var(--muted); }
+
+/* in the chosen key */
+.cof-seg.is-in .cof-wedge { fill: var(--accent-soft); stroke: var(--accent); }
+/* the key itself */
+.cof-seg.is-tonic .cof-wedge { fill: var(--accent); stroke: var(--accent); }
+.cof-seg.is-tonic .cof-name,
+.cof-seg.is-tonic .cof-alt { fill: var(--accent-ink); }
+/* in the key, but the app has no shape for it: outlined, never filled */
+.cof-seg.is-absent .cof-wedge {
+  fill: var(--surface-2);
+  stroke: var(--accent);
+  stroke-dasharray: 3 3;
+}
+.cof-seg.is-absent .cof-name { fill: var(--muted); }
+/* too few of its chords exist to be worth practising */
+.cof-seg.is-off { cursor: default; pointer-events: none; }
+.cof-seg.is-off .cof-name,
+.cof-seg.is-off .cof-alt { fill: var(--muted); opacity: 0.4; }
+
+.cof-hub { fill: var(--surface-2); stroke: var(--line); }
+.cof-hub-key { fill: var(--text); font-size: 13px; font-weight: 700; }
+.cof-hub-sig { fill: var(--muted); font-size: 8px; }
+.cof-hub-hint { fill: var(--muted); font-size: 9.5px; }
+
+.cof-degrees {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 12px;
+}
+.cof-deg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  padding: 4px 7px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+.cof-deg i {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.cof-deg.is-absent {
+  color: var(--muted);
+  border-style: dashed;
+  background: none;
+}
+.cof-note {
+  font-size: 0.76rem;
+  color: var(--muted);
+  text-align: center;
+  padding-top: 9px;
+}
+
 .row-field {
   display: flex;
   align-items: center;

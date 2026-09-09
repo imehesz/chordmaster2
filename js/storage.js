@@ -23,6 +23,7 @@
       volume: 0.8,
       keepAwake: true,
       showFingers: true,
+      showCircle: true,
       tuning: 'standard',
       tunerBpm: 40,
       tunerStrings: [true, true, true, true, true, true]
